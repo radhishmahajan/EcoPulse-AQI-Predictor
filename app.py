@@ -126,5 +126,3 @@ def run_web_app():
         # File Handling
         ReportManager.save_report(station, result)
         st.toast("Report saved to aqi_history.txt!", icon='💾')
-
-.
