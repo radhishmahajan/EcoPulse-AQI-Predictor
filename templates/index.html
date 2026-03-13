@@ -3,81 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoPulse | SDG 11 AQI Predictor</title>
+    <title>EcoPulse | Smart AQI Monitor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f0f4f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .hero-section { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 40px 0; margin-bottom: 30px; border-radius: 0 0 20px 20px; }
-        .card { border-radius: 15px; border: none; transition: transform 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        .result-box { border-left: 5px solid #28a745; background-color: #ffffff; }
-        .btn-predict { background-color: #28a745; color: white; font-weight: bold; border: none; }
-        .btn-predict:hover { background-color: #218838; color: white; }
+        body { background-color: #f1f3f5; font-family: 'Inter', sans-serif; }
+        .hero { background: linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%); color: white; padding: 40px 0; border-radius: 0 0 25px 25px; margin-bottom: 30px;}
+        .card { border-radius: 20px; border: none; }
+        .result-card { border-left: 10px solid #2e7d32; }
     </style>
 </head>
 <body>
 
-    <div class="hero-section text-center shadow">
-        <h1 class="display-4 fw-bold">🌱 EcoPulse Dashboard</h1>
-        <p class="lead">Predicting Air Quality for Sustainable Cities (SDG 11)</p>
-    </div>
+<div class="hero text-center shadow">
+    <h1 class="fw-bold">🌱 EcoPulse Smart Dashboard</h1>
+    <p>Predicting Urban Air Quality (SDG 11.6)</p>
+</div>
 
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-7">
-                <div class="card shadow p-4 mb-5">
-                    <h4 class="mb-4 text-secondary text-center">Enter Sensor Readings</h4>
-                    
-                    <form action="/" method="post">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">PM2.5 (Fine Particles)</label>
-                                <input type="number" step="0.01" name="pm25" class="form-control" placeholder="e.g. 45.5" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">PM10 (Dust/Soot)</label>
-                                <input type="number" step="0.01" name="pm10" class="form-control" placeholder="e.g. 102.0" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">NO2 Level</label>
-                                <input type="number" step="0.01" name="no2" class="form-control" placeholder="e.g. 25.4" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">CO Level</label>
-                                <input type="number" step="0.01" name="co" class="form-control" placeholder="e.g. 1.2" required>
-                            </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow p-4 mb-4">
+                <form method="POST">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Country</label>
+                            <select name="country" id="country" class="form-select" required onchange="updateStates()">
+                                <option value="">Select</option>
+                                {% for c in locations %} <option value="{{c}}">{{c}}</option> {% endfor %}
+                            </select>
                         </div>
-                        
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-predict w-100 py-2 fs-5">Calculate AQI Impact</button>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">State</label>
+                            <select name="state" id="state" class="form-select" required onchange="updateCities()">
+                                <option value="">Select State</option>
+                            </select>
                         </div>
-                    </form>
-
-                    {% if result %}
-                    <div class="result-box mt-5 p-4 rounded shadow-sm">
-                        <div class="row align-items-center text-center text-md-start">
-                            <div class="col-md-7">
-                                <h5 class="text-muted mb-1">Predicted AQI</h5>
-                                <h2 class="display-5 fw-bold text-success">{{ result }}</h2>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="alert {% if result <= 100 %}alert-success{% elif result <= 200 %}alert-warning{% else %}alert-danger{% endif %} mb-0">
-                                    <strong>Status:</strong> {{ status }}
-                                </div>
-                            </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">City/Area</label>
+                            <select name="city" id="city" class="form-select" required>
+                                <option value="">Select City</option>
+                            </select>
                         </div>
                     </div>
-                    {% endif %}
 
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-success">PM2.5 Sensor Reading (µg/m³)</label>
+                        <input type="number" step="0.01" name="pm25" class="form-control form-control-lg" placeholder="Enter Value" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm">Analyze Air Quality</button>
+                </form>
+            </div>
+
+            {% if result %}
+            <div class="card result-card shadow p-4 mb-5 bg-white">
+                <div class="row text-center text-md-start">
+                    <div class="col-md-5 border-end">
+                        <small class="text-muted fw-bold">PREDICTED AQI FOR {{ city | upper }}</small>
+                        <h2 class="display-4 fw-bold text-success">{{ result }}</h2>
+                    </div>
+                    <div class="col-md-7 ps-md-4">
+                        <h5 class="fw-bold text-dark mt-2">Health Precautions:</h5>
+                        <p class="text-secondary mb-0">{{ status }}</p>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="text-center text-muted mt-2 mb-5">
-            <small>Built with OOPS Logic & FastAPI • Supporting UN SDG 11.6</small>
+            {% endif %}
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // CRITICAL FIX: The '| tojson | safe' filters convert Python dict to valid JS object
+    const locationData = {{ locations | tojson | safe }};
+
+    function updateStates() {
+        const country = document.getElementById("country").value;
+        const stateSelect = document.getElementById("state");
+        const citySelect = document.getElementById("city");
+
+        stateSelect.innerHTML = '<option value="">Select State</option>';
+        citySelect.innerHTML = '<option value="">Select City</option>';
+
+        if (country && locationData[country]) {
+            Object.keys(locationData[country]).forEach(state => {
+                const opt = document.createElement("option");
+                opt.value = state;
+                opt.text = state;
+                stateSelect.add(opt);
+            });
+        }
+    }
+
+    function updateCities() {
+        const country = document.getElementById("country").value;
+        const state = document.getElementById("state").value;
+        const citySelect = document.getElementById("city");
+
+        citySelect.innerHTML = '<option value="">Select City</option>';
+
+        if (state && locationData[country][state]) {
+            locationData[country][state].forEach(city => {
+                const opt = document.createElement("option");
+                opt.value = city;
+                opt.text = city;
+                citySelect.add(opt);
+            });
+        }
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

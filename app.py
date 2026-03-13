@@ -6,6 +6,20 @@ import os
 from sklearn.ensemble import RandomForestRegressor
 from abc import ABC, abstractmethod
 
+import requests
+
+# Add this near the top of app.py
+LOCATION_DATA = {
+    "India": {
+        "Delhi": ["Central Delhi", "East Delhi", "New Delhi", "North Delhi", "South Delhi"],
+        "Punjab": ["Amritsar", "Ludhiana", "Jalandhar", "Patiala", "Bathinda"],
+        "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik"],
+        "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"],
+        "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem"],
+        "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Agra", "Varanasi"],
+        "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri"]
+    }
+}
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 @app.get("/history", response_class=HTMLResponse)
@@ -87,3 +101,70 @@ async def predict_aqi(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)    
+
+
+
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+# --- MOCK DATA FOR LOCATION (In real life, use a database or API) ---
+
+
+# --- HEALTH PRECAUTION LOGIC ---
+def get_precautions(aqi):
+    if aqi <= 50:
+        return "Enjoy your outdoor activities! The air is fresh."
+    elif aqi <= 100:
+        return "Air quality is acceptable. No major precautions needed."
+    elif aqi <= 200:
+        return "⚠️ Sensitive groups should reduce prolonged outdoor exertion."
+    elif aqi <= 300:
+        return "🚨 Health alert: Everyone may experience effects. Wear a mask (N95)."
+    else:
+        return "💀 HEALTH EMERGENCY: Stay indoors. Keep windows closed."
+
+# --- LIVE AQI FETCHING (Optional feature) ---
+def get_live_aqi(city):
+    # Get a free token from https://aqicn.org/api/
+    TOKEN = "e7c7398fdc76c87a1192df42563e3e835862b478" 
+    try:
+        url = f"https://api.waqi.info/feed/{city}/?token={TOKEN}"
+        r = requests.get(url).json()
+        if r['status'] == 'ok':
+            return r['data']['aqi']
+    except:
+        return None
+    return None
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "locations": LOCATION_DATA,
+        "result": None
+    })
+
+@app.post("/", response_class=HTMLResponse)
+async def predict(
+    request: Request, 
+    country: str = Form(...),
+    state: str = Form(...),
+    city: str = Form(...),
+    pm25: float = Form(...)
+):
+    # For now, we simulate the prediction based on your PM2.5 input
+    # In your full code, call predictor.predict() here
+    aqi_result = pm25 * 1.5 
+    
+    precaution = get_precautions(aqi_result)
+    live_aqi = get_live_aqi(city) # This will return None until you add a real Token
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "locations": LOCATION_DATA,
+        "result": round(aqi_result, 2),
+        "status": precaution,
+        "city": city,
+        "live_aqi": live_aqi
+    })
