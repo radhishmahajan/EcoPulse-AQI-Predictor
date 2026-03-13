@@ -1,21 +1,12 @@
-# Virtual Environment (Your 'air' folder)
+# Virtual Environments
 air/
 venv/
 env/
 .env
 
-# Python Bytecode (Temporary files)
+# Python specific
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
-# Streamlit-specific
-.streamlit/
-
-# Operating System files
-.DS_Store
-Thumbs.db
-
-# VS Code settings
-.vscode/
+# Local History
+aqi_history.txt

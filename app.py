@@ -8,6 +8,17 @@ from abc import ABC, abstractmethod
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+@app.get("/history", response_class=HTMLResponse)
+async def view_history(request: Request):
+    history_data = []
+    if os.path.exists("aqi_history.txt"):
+        with open("aqi_history.txt", "r") as f:
+            history_data = f.readlines()
+    
+    return templates.TemplateResponse("history.html", {
+        "request": request, 
+        "history": history_data
+    })
 
 # --- YOUR OOPS LOGIC ---
 
