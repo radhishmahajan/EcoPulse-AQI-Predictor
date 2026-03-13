@@ -88,7 +88,7 @@ def run_web_app():
     @st.cache_resource
     def load_predictor():
         p = AQIPredictor()
-        p.train_model("air_quality_data.csv")
+        p.train_model("./air_quality_data.csv")
         return p
 
     predictor = load_predictor()
