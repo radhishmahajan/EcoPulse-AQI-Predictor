@@ -94,7 +94,7 @@ async def home(request: Request):
 async def view_history(request: Request):
     history_data = []
     if os.path.exists("aqi_history.txt"):
-        with open("aqi_history.txt", "r") as f:
+        with open("aqi_history.txt", "r", encoding="utf-8") as f:
             history_data = f.readlines()
     return templates.TemplateResponse("history.html", {"request": request, "history": history_data})
 
@@ -105,7 +105,7 @@ async def predict(
     state: str = Form(...),
     city: str = Form(...),
     pm25: float = Form(...),
-    pm10: float = Form(80.0), # Providing defaults so app doesn't crash
+    pm10: float = Form(80.0),
     no2: float = Form(30.0),
     co: float = Form(1.5)
 ):
@@ -117,8 +117,8 @@ async def predict(
     precaution = get_precautions(aqi_result)
     live_aqi_val = get_live_aqi(city)
 
-    # 3. Save to History
-    with open("aqi_history.txt", "a") as f:
+    # 3. Save to History (FIXED WITH UTF-8)
+    with open("aqi_history.txt", "a", encoding="utf-8") as f:
         f.write(f"City: {city} | Predicted: {aqi_result} | Status: {precaution}\n")
 
     return templates.TemplateResponse("index.html", {
@@ -133,4 +133,5 @@ async def predict(
 if __name__ == "__main__":
     import uvicorn
     # Use port 8000 to avoid the 'Address already in use' error
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001
+                )
