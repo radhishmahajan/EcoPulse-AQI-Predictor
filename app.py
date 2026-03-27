@@ -1,15 +1,12 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+import streamlit as st
 import pandas as pd
 import os
 import requests
 from sklearn.ensemble import RandomForestRegressor
 from abc import ABC, abstractmethod
 
-# --- CONFIGURATION & DATA ---
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+# --- PAGE CONFIGURATION ---
+st.set_page_config(page_title="EcoPulse AQI Predictor", page_icon="🌿", layout="wide")
 
 LOCATION_DATA = {
     "India": {
@@ -32,7 +29,7 @@ class BasePredictor(ABC):
 
 class AirSensor:
     def __init__(self, pm25, pm10, no2, co):
-        self.__pm25 = pm25  # Encapsulation
+        self.__pm25 = pm25
         self.__pm10 = pm10
         self.__no2 = no2
         self.__co = co
@@ -57,9 +54,14 @@ class AQIPredictor(BasePredictor):
         if not self.is_trained: return 0.0
         return round(float(self.model.predict(sensor_obj.get_data())[0]), 2)
 
-# Initialize and Train Model
-predictor = AQIPredictor()
-predictor.train_model("air_quality_data.csv")
+# Cache the model training so it doesn't retrain on every button click
+@st.cache_resource
+def load_model():
+    predictor = AQIPredictor()
+    predictor.train_model("air_quality_data.csv")
+    return predictor
+
+predictor = load_model()
 
 # --- UTILITY FUNCTIONS ---
 def get_precautions(aqi):
@@ -80,59 +82,57 @@ def get_live_aqi(city):
         return "Not Available"
     return "Not Available"
 
-# --- ROUTES ---
+# --- STREAMLIT UI ---
+st.title("🌿 EcoPulse: AI-Driven Air Quality Predictor")
+st.markdown("Monitor and predict urban air quality using Machine Learning and real-time sensor data.")
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "locations": LOCATION_DATA,
-        "result": None
-    })
+tab1, tab2 = st.tabs(["Prediction Dashboard", "Prediction History"])
 
-@app.get("/history", response_class=HTMLResponse)
-async def view_history(request: Request):
-    history_data = []
+with tab1:
+    st.header("Enter Environmental Data")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        country = st.selectbox("Select Country", list(LOCATION_DATA.keys()))
+        state = st.selectbox("Select State", list(LOCATION_DATA[country].keys()))
+        city = st.selectbox("Select City", LOCATION_DATA[country][state])
+        
+    with col2:
+        pm25 = st.number_input("PM2.5 Level", min_value=0.0, value=50.0)
+        pm10 = st.number_input("PM10 Level", min_value=0.0, value=80.0)
+        no2 = st.number_input("NO2 Level", min_value=0.0, value=30.0)
+        co = st.number_input("CO Level", min_value=0.0, value=1.5)
+
+    if st.button("Predict AQI"):
+        # 1. Use OOPS to predict
+        sensor = AirSensor(pm25, pm10, no2, co)
+        aqi_result = predictor.predict(sensor)
+        
+        # 2. Get Precautions and Live Data
+        precaution = get_precautions(aqi_result)
+        live_aqi_val = get_live_aqi(city)
+        
+        # 3. Save to History
+        with open("aqi_history.txt", "a", encoding="utf-8") as f:
+            f.write(f"City: {city} | Predicted: {aqi_result} | Status: {precaution}\n")
+            
+        # 4. Display Results
+        st.divider()
+        st.subheader("Results")
+        res_col1, res_col2 = st.columns(2)
+        res_col1.metric("Predicted AQI (ML Model)", aqi_result)
+        res_col2.metric("Live AQI (WAQI API)", live_aqi_val)
+        st.info(f"**Health Advice:** {precaution}")
+
+with tab2:
+    st.header("Prediction History")
     if os.path.exists("aqi_history.txt"):
         with open("aqi_history.txt", "r", encoding="utf-8") as f:
             history_data = f.readlines()
-    return templates.TemplateResponse("history.html", {"request": request, "history": history_data})
-
-@app.post("/", response_class=HTMLResponse)
-async def predict(
-    request: Request, 
-    country: str = Form(...),
-    state: str = Form(...),
-    city: str = Form(...),
-    pm25: float = Form(...),
-    pm10: float = Form(80.0),
-    no2: float = Form(30.0),
-    co: float = Form(1.5)
-):
-    # 1. Use OOPS to predict
-    sensor = AirSensor(pm25, pm10, no2, co)
-    aqi_result = predictor.predict(sensor)
-    
-    # 2. Get Precautions and Live Data
-    precaution = get_precautions(aqi_result)
-    live_aqi_val = get_live_aqi(city)
-
-    # 3. Save to History (FIXED WITH UTF-8)
-    with open("aqi_history.txt", "a", encoding="utf-8") as f:
-        f.write(f"City: {city} | Predicted: {aqi_result} | Status: {precaution}\n")
-
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "locations": LOCATION_DATA,
-        "result": aqi_result,
-        "status": precaution,
-        "city": city,
-        "live_aqi": live_aqi_val
-    })
-
-if __name__ == "__main__":
-    import uvicorn
-    # Use port 8000 to avoid the 'Address already in use' error
-    uvicorn.run(app, host="127.0.0.1", port=8002
-    
-                )
+            if history_data:
+                for line in reversed(history_data): # Show newest first
+                    st.text(line.strip())
+            else:
+                st.write("No history available yet.")
+    else:
+        st.write("No history available yet.")

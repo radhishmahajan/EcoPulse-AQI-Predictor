@@ -1,7 +1,4 @@
-fastapi
-uvicorn
-jinja2
-python-multipart
+streamlit
 pandas
 scikit-learn
 requests
