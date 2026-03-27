@@ -50,7 +50,7 @@ This project is aligned with **SDG Target 11.6**:
     ```bash
     uvicorn app:app --reload --port 8001
     ```
-4.  **View App:** Navigate to `http://127.0.0.1:8001`
+4.  **View App:** Navigate to `https://ecopulse-aqi-predictor-sxsrynk5skaw3yuvawxmnf.streamlit.app/`
 
 ---
 
