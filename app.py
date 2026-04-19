@@ -117,24 +117,34 @@ def get_precautions(aqi):
     if aqi <= 50:
         return "Air is fresh. Ideal for outdoor activities."
     elif aqi <= 100:
-        return "Acceptable air quality. Safe for most."
+        return "Satisfactory air quality. Safe for most people."
+    elif aqi <= 150:
+        return "Sensitive groups should reduce prolonged outdoor exertion."
     elif aqi <= 200:
-        return "⚠️ Poor Quality. Sensitive groups take care."
+        return "Poor air quality. Sensitive groups should avoid outdoor activity."
     elif aqi <= 300:
-        return "🚨 Hazardous. Wear N95 masks outdoors."
+        return "Very poor air quality. Wear a mask outdoors and limit exposure."
+    elif aqi <= 400:
+        return "Severe pollution. Stay indoors if possible."
     else:
-        return "💀 EMERGENCY: Extreme pollution. Stay indoors."
+        return "💀 HEALTH EMERGENCY: Stay indoors. Keep windows closed."
 
 
 def get_aqi_color(aqi):
     if aqi <= 50:
-        return "#22c55e"
+        return "#22c55e"   # green
     elif aqi <= 100:
-        return "#eab308"
+        return "#eab308"   # yellow
+    elif aqi <= 150:
+        return "#f59e0b"   # amber
     elif aqi <= 200:
-        return "#f97316"
+        return "#f97316"   # orange
+    elif aqi <= 300:
+        return "#ef4444"   # red
+    elif aqi <= 400:
+        return "#8b5cf6"   # purple
     else:
-        return "#ef4444"
+        return "#7f1d1d"   # dark maroon
 
 
 def get_live_data(city):
